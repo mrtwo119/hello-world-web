@@ -3,165 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>개인 디지털 아카이브 - 모바일 검색</title>
+    <title>개인 디지털 아카이브</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
-    <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
     <header class="bg-[#0f2a4a] text-white p-4 sticky top-0 z-50 shadow-md">
         <div class="flex justify-between items-center">
             <h1 class="text-lg font-bold tracking-tight">📱 통합 도서 검색 (모바일)</h1>
-            <span class="text-xs bg-teal-500 px-2 py-1 rounded-sm text-white">SQLite Active</span>
+            <span id="dbStatus" class="text-xs bg-red-500 px-2 py-1 rounded-sm text-white font-medium">DB 미연결</span>
         </div>
     </header>
 
     <main class="p-4 max-w-md mx-auto space-y-4">
 
+        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-xs space-y-2">
+            <label class="block text-xs font-bold text-gray-600">📂 SQLite DB 파일 로드 (.db, .sqlite)</label>
+            <input type="file" id="dbFileInput" accept=".db,.sqlite" 
+                class="w-full text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+        </div>
+
         <div class="relative">
-            <input type="text" id="searchInput" placeholder="제목, 저자, ISBN 또는 파일명 키워드 검색..." 
-                class="w-full p-3.5 bg-white border border-gray-300 rounded-xl shadow-xs focus:outline-hidden focus:ring-2 focus:ring-teal-500 text-sm pl-4 pr-10">
-            <span class="absolute right-3 top-3.5 text-gray-400">🔍</span>
+            <input type="text" id="searchInput" placeholder="먼저 DB 파일을 선택해주세요..." disabled
+                class="w-full p-3.5 bg-gray-100 border border-gray-300 rounded-full text-sm pl-5 pr-12 focus:outline-hidden focus:bg-white focus:border-teal-600 disabled:opacity-50 transition-all shadow-xs">
+            <span class="absolute right-4 top-3.5 text-gray-400 text-lg">🔍</span>
         </div>
 
-        <div class="flex gap-2 overflow-x-auto pb-1 text-xs whitespace-nowrap scrollbar-none">
-            <button class="px-4 py-2 bg-teal-600 text-white rounded-full font-medium shadow-xs">All</button>
-            <button class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-full font-medium">신착도서</button>
-            <button class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-full font-medium">베스트셀러</button>
-            <button class="px-4 py-2 bg-white border border-gray-200 text-gray-600 rounded-full font-medium">분야별</button>
+        <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar text-xs">
+            <button class="px-4 py-2 bg-teal-600 text-white rounded-full font-semibold shrink-0 shadow-xs">All</button>
+            <button class="px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-full font-medium shrink-0 shadow-xs">신착도서</button>
+            <button class="px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-full font-medium shrink-0 shadow-xs">베스트셀러</button>
+            <button class="px-4 py-2 bg-white text-gray-600 border border-gray-200 rounded-full font-medium shrink-0 shadow-xs">분야별</button>
         </div>
 
-        ---
+        <hr class="border-gray-200 my-2 border-dashed">
 
         <div class="space-y-3">
             <div class="text-xs text-gray-500 font-medium px-1 flex justify-between">
                 <span>검색 결과 (<span id="resultCount">0</span>건)</span>
                 <span class="text-gray-400">ID순</span>
             </div>
-
-            <div id="bookList" class="space-y-3">
-                <div class="text-center py-8 text-gray-400 text-sm">데이터를 로드하는 중...</div>
-            </div>
-        </div>
-    </main>
-
-    <script>
-        let db;
-
-        // 1. SQL.js 초기화 및 가상 DB 생성 (실제 서버 환경에서는 DB 파일을 fetch로 로드 가능)
-        async function initDatabase() {
-            const config = {
-                locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
-            };
-            
-            const SQL = await initSqlJs(config);
-            db = new SQL.Database();
-
-            // 이미지 UI 기반 테이블 생성
-            db.run(`
-                CREATE TABLE books (
-                    id TEXT PRIMARY KEY,
-                    kdc TEXT,
-                    title TEXT,
-                    author TEXT,
-                    publisher TEXT,
-                    reg_date TEXT,
-                    storage_ipad INTEGER,
-                    storage_external INTEGER,
-                    storage_gdrive INTEGER,
-                    status TEXT
-                );
-            `);
-
-            // 샘플 데이터 삽입 (이미지 데이터 100% 반영)
-            db.run(`
-                INSERT INTO books VALUES 
-                ('00001', 'A003.00.00001', 'Linux가 보이는 그림책', 'ANK Co., Ltd', 'Z-Library', '-', 1, 1, 1, '해결 완료 (pdf)'),
-                ('00002', 'A003.00.00002', '그림으로 이해하는 양자컴퓨터의 구조', '우츠기 타케루', 'Z-Library', '-', 1, 1, 1, '해결 완료 (pdf)'),
-                ('00003', 'A003.00.00003', '리눅스 커널 내부구조', '백승재', 'Z-Library', '-', 1, 1, 1, '해결 완료 (pdf)'),
-                ('00004', 'A003.00.00004', '혼자 공부하는 컴퓨터 구조 & 운영체제', '강민철', 'Z-Library', '-', 1, 1, 1, '해결 완료 (pdf)');
-            `);
-
-            // 초기 전체 조회
-            searchBooks('');
-        }
-
-        // 2. 도서 검색 및 모바일 카드 뷰 렌더링 함수
-        function searchBooks(keyword) {
-            const bookListDiv = document.getElementById('bookList');
-            bookListDiv.innerHTML = '';
-
-            // 검색 쿼리 실행 (LIKE 문 활용)
-            const query = `
-                SELECT * FROM books 
-                WHERE title LIKE ? OR kdc LIKE ? OR author LIKE ? OR publisher LIKE ?
-            `;
-            const stmt = db.prepare(query);
-            stmt.bind([`%${keyword}%`, `%${keyword}%`, `%${keyword}%`, `%${keyword}%`]);
-
-            let count = 0;
-
-            while (stmt.step()) {
-                count++;
-                const row = stmt.getAsObject();
-
-                // 모바일 최적화 카드 컴포넌트 생성
-                const card = document.createElement('div');
-                card.className = "bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-2.5";
-
-                card.innerHTML = `
-                    <div class="flex justify-between items-center text-xs">
-                        <span class="text-gray-400 font-mono">ID: ${row.id}</span>
-                        <span class="text-teal-600 font-bold bg-teal-50 px-2 py-0.5 rounded-sm">${row.kdc}</span>
-                    </div>
-
-                    <div>
-                        <h3 class="text-sm font-bold text-gray-900 leading-snug">${row.title}</h3>
-                        <p class="text-xs text-gray-500 mt-1">${row.author} (${row.publisher})</p>
-                        <p class="text-[11px] text-gray-400">등록일자: ${row.reg_date}</p>
-                    </div>
-
-                    <hr class="border-gray-100">
-
-                    <div class="flex flex-col gap-1.5 text-xs text-gray-600">
-                        <div class="flex items-center gap-1 flex-wrap">
-                            <span class="text-gray-400 text-[11px] mr-1">스토리지:</span>
-                            <span class="${row.storage_ipad ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-400'} px-1.5 py-0.5 rounded text-[11px]">iPad: O</span>
-                            <span class="${row.storage_external ? 'bg-purple-50 text-purple-600' : 'bg-gray-100 text-gray-400'} px-1.5 py-0.5 rounded text-[11px]">외장: O</span>
-                            <span class="${row.storage_gdrive ? 'bg-amber-50 text-amber-600' : 'bg-gray-100 text-gray-400'} px-1.5 py-0.5 rounded text-[11px]">구글드라이브</span>
-                        </div>
-                        <div class="flex justify-between items-center mt-1">
-                            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                                🟢 ${row.status}
-                            </span>
-                            <div class="flex gap-1">
-                                <button class="px-2.5 py-1 bg-gray-100 text-gray-700 font-medium rounded-md text-[11px] active:bg-gray-200">머지</button>
-                                <button class="px-2.5 py-1 bg-red-50 text-red-500 font-medium rounded-md text-[11px] active:bg-red-100">삭제</button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                bookListDiv.appendChild(card);
-            }
-
-            stmt.free();
-            document.getElementById('resultCount').innerText = count;
-
-            if (count === 0) {
-                bookListDiv.innerHTML = `<div class="text-center py-12 text-gray-400 text-sm">일치하는 결과가 없습니다.</div>`;
-            }
-        }
-
-        // 3. 이벤트 리스너 등록 (실시간 타이핑 검색)
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            searchBooks(e.target.value.trim());
-        });
-
-        // 앱 시작점
-        initDatabase();
-    </script>
-</body>
-</html>
