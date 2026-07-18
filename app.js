@@ -2,11 +2,23 @@
  * 개인 디지털 아카이브 - KDC_ebook_v1o3 테이블 전용 검색 로직
  */
 
+const APP_VERSION = "v1.0.3"; // 🌟 현재 테이블 버전에 맞춘 앱 버전 정의
+
 let db = null;
 let SQL = null;
 
+// 페이지 로드 시 버전을 화면에 표시하는 초기화 함수 호출
+function displayVersion() {
+    const versionEl = document.getElementById('appVersion');
+    if (versionEl) {
+        versionEl.innerText = APP_VERSION;
+    }
+}
+
 // 1. 페이지 로드 시 SQL.js 웹어셈블리(WASM) 엔진 초기화
+// 기존 initSqlEngine 함수 내부에 displayVersion()을 추가하거나 파일 맨 아래에서 실행
 async function initSqlEngine() {
+    displayVersion(); // 🌟 화면에 버전 표시 실행
     try {
         const config = {
             locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
