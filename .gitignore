@@ -1,0 +1,27 @@
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Node.js / 라이브러리 디렉토리 (만약 생성될 경우 대비)
+node_modules/
+.npm/
+package-lock.json
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+
+# SQLite 실제 데이터베이스 파일 제외
+# (테스트용 실데이터가 GitHub 원격 저장소에 업로드되어 공개되거나 용량을 차지하는 것을 방지)
+*.db
+*.sqlite
+*.sqlite3
+
+# 로컬 환경 설정 및 로그 파일
+*.log
+.env
