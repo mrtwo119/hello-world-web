@@ -1,13 +1,8 @@
-/**
- * 개인 디지털 아카이브 - KDC_ebook_v1o3 테이블 전용 검색 로직
- */
-
-const APP_VERSION = "v1.0.3"; // 🌟 현재 테이블 버전에 맞춘 앱 버전 정의
+const APP_VERSION = "v1.0.3"; 
 
 let db = null;
 let SQL = null;
 
-// 페이지 로드 시 버전을 화면에 표시하는 초기화 함수 호출
 function displayVersion() {
     const versionEl = document.getElementById('appVersion');
     if (versionEl) {
@@ -15,10 +10,8 @@ function displayVersion() {
     }
 }
 
-// 1. 페이지 로드 시 SQL.js 웹어셈블리(WASM) 엔진 초기화
-// 기존 initSqlEngine 함수 내부에 displayVersion()을 추가하거나 파일 맨 아래에서 실행
 async function initSqlEngine() {
-    displayVersion(); // 🌟 화면에 버전 표시 실행
+    displayVersion(); 
     try {
         const config = {
             locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
@@ -29,32 +22,24 @@ async function initSqlEngine() {
     }
 }
 
-// 2. 스마트폰 파일 탐색기로부터 DB 파일을 읽어와 메모리에 주입하는 루틴
 document.getElementById('dbFileInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
 
     const reader = new FileReader();
-    
     reader.onload = function() {
         try {
             const uints = new Uint8Array(reader.result);
             db = new SQL.Database(uints);
-
-            // UI 상태 변경 및 검색창 활성화
             updateUIConnected();
-
-            // 최초 로드 시 전체 데이터(913행) 출력
-            searchBooks('');
+            searchBooks(''); // 초기 로드 시 전체 출력
         } catch (error) {
             alert("올바른 SQLite DB 파일 형식이 아닙니다.\n에러 내용: " + error.message);
         }
     };
-    
     reader.readAsArrayBuffer(file);
 });
 
-// 3. UI 연결 상태 업데이트 함수
 function updateUIConnected() {
     const statusBadge = document.getElementById('dbStatus');
     statusBadge.innerText = "SQLite Active";
@@ -66,14 +51,13 @@ function updateUIConnected() {
     searchInput.focus();
 }
 
-// 4. 실제 KDC_ebook_v1o3 테이블 질의 및 모바일 카드 레이아웃 렌더링
 function searchBooks(keyword) {
     if (!db) return;
     
     const bookListDiv = document.getElementById('bookList');
     bookListDiv.innerHTML = '';
 
-    // 실제 컬럼명(BookContents, KDCCode, Attribute)을 반영한 검색 쿼리
+    // 실제 스크린샷의 대소문자 컬럼명 완벽 반영
     const query = `
         SELECT * FROM KDC_ebook_v1o3 
         WHERE BookContents LIKE ? OR KDCCode LIKE ? OR Attribute LIKE ?
@@ -91,7 +75,6 @@ function searchBooks(keyword) {
             count++;
             const row = stmt.getAsObject();
             
-            // 스토리지 조건 검사 ('O'일 때 활성화 스타일 적용, GDRV는 값이 매칭될 때 활성화)
             const isIpadActive = row.iPAD === 'O';
             const isExtHddActive = row.ExtHDD === 'O';
             const isGdrvActive = row.GDRV && row.GDRV !== 'NULL' && row.GDRV !== '';
@@ -99,7 +82,6 @@ function searchBooks(keyword) {
             const card = document.createElement('div');
             card.className = "bg-white p-4 rounded-xl border border-gray-100 shadow-xs space-y-2.5";
             
-            // 모바일 캡처 UI와 데이터를 1:1 완벽 매핑
             card.innerHTML = `
                 <div class="flex justify-between items-center text-xs">
                     <span class="text-gray-400 font-mono">ID: ${row.BookID}</span>
@@ -148,12 +130,11 @@ function searchBooks(keyword) {
         bookListDiv.innerHTML = `
             <div class="text-center py-12 text-red-500 text-sm">
                 ⚠️ 쿼리 처리 실패<br>
-                <span class="text-xs text-gray-400">데이터베이스 스키마와 일치하지 않습니다.</span>
+                <span class="text-xs text-gray-400">데이터베이스 스키마 대소문자 설정을 확인하세요.</span>
             </div>`;
     }
 }
 
-// 5. 실시간 검색 핸들러 등록
 document.getElementById('searchInput').addEventListener('input', (e) => {
     searchBooks(e.target.value.trim());
 });
