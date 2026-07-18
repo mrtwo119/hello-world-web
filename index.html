@@ -9,15 +9,15 @@
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-        <header class="bg-[#0f2a4a] text-white p-4 sticky top-0 z-50 shadow-md">
-            <div class="flex justify-between items-center">
-                <div class="flex items-baseline gap-1.5">
-                    <h1 class="text-lg font-bold tracking-tight">📱 통합 도서 검색 (모바일)</h1>
-                    <span id="appVersion" class="text-[10px] text-gray-400 font-mono font-medium"></span>
-                </div>
-                <span id="dbStatus" class="text-xs bg-red-500 px-2 py-1 rounded-sm text-white font-medium">DB 미연결</span>
+    <header class="bg-[#0f2a4a] text-white p-4 sticky top-0 z-50 shadow-md">
+        <div class="flex justify-between items-center">
+            <div class="flex items-baseline gap-1.5">
+                <h1 class="text-lg font-bold tracking-tight">📱 통합 도서 검색 (모바일)</h1>
+                <span id="appVersion" class="text-[10px] text-gray-400 font-mono font-medium"></span>
             </div>
-        </header>
+            <span id="dbStatus" class="text-xs bg-red-500 px-2 py-1 rounded-sm text-white font-medium">DB 미연결</span>
+        </div>
+    </header>
 
     <main class="p-4 max-w-md mx-auto space-y-4">
 
@@ -47,3 +47,15 @@
                 <span>검색 결과 (<span id="resultCount">0</span>건)</span>
                 <span class="text-gray-400">ID순</span>
             </div>
+
+            <div id="bookList" class="space-y-3">
+                <div class="text-center py-16 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100 shadow-xs">
+                    상단의 SQLite DB 파일을 로드하면<br>데이터가 표시됩니다.
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

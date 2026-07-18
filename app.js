@@ -57,7 +57,7 @@ function searchBooks(keyword) {
     const bookListDiv = document.getElementById('bookList');
     bookListDiv.innerHTML = '';
 
-    // 실제 스크린샷의 대소문자 컬럼명 완벽 반영
+    // 실제 테이블명 및 대소문자 컬럼명 반영
     const query = `
         SELECT * FROM KDC_ebook_v1o3 
         WHERE BookContents LIKE ? OR KDCCode LIKE ? OR Attribute LIKE ?
