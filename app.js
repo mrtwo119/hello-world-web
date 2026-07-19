@@ -1,4 +1,8 @@
-const APP_VERSION = "v1.0.4"; 
+require('dotenv').config();
+
+const APP_VERSION = "v1.0.5"; 
+// 테이블명을 환경 변수에서 가져옴 (없을 경우를 대비한 기본값 설정)
+const tableName = process.env.DB_TABLE_EBOOK || 'ebook_table';
 
 let db = null;
 let SQL = null;
@@ -59,7 +63,7 @@ function searchBooks(keyword) {
 
     // 실제 테이블명 및 대소문자 컬럼명 반영
     const query = `
-        SELECT * FROM KDC_ebook_v1o3 
+        SELECT * FROM ${tableName} 
         WHERE BookContents LIKE ? OR KDCCode LIKE ? OR Attribute LIKE ?
         ORDER BY BookID ASC
     `;
