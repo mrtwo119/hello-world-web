@@ -30,7 +30,6 @@ hello-world-web/
 ├── app.js            # 데이터베이스 로딩 및 검색 인터랙션 로직
 ├── index.html        # 메인 웹 어플리케이션 마크업 및 스타일 구성
 ├── sqlite.db         # 개인용 db 구성 파일
-├── .env.example      # your_tabel_name
 └── README.md         # 프로젝트 안내서
 ```
 
@@ -62,19 +61,3 @@ node -e "require('http').createServer((req, res) => { const fs = require('fs'); 
 2. 로드가 완료되면 상단 우측의 뱃지가 **`SQLite Active` 🟢**로 변경됩니다.
 3. 검색창에 검색어를 입력하면 하단에 실시간으로 데이터 카드가 생성됩니다.
 
----
-
-## 📊 데이터베이스 스키마 요구사항
-
-검색 및 화면 표시가 정상적으로 동작하려면 로드하는 SQLite 파일에 아래 사양의 테이블이 존재해야 합니다.
-
-- **테이블명**: `ebook_tbl`
-- **필수 컬럼**:
-  - `book_id` (INTEGER, 기본키)
-  - `code` (TEXT, 분류 코드)
-  - `contents` (TEXT, 제목 및 내용)
-  - `date` (TEXT, 등록일자)
-  - `store1` (TEXT, 'O' 또는 'X' - 보관 여부)
-  - `store2` (TEXT, 'O' 또는 'X' - 보관 여부)
-  - `store3` (TEXT, store 식별자 또는 주소)
-  - `attr` (TEXT, 파일의 포맷 혹은 속성)
