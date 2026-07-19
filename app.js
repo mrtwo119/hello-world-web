@@ -1,11 +1,27 @@
-require('dotenv').config();
-
-const APP_VERSION = "v1.0.5"; 
-// 테이블명을 환경 변수에서 가져옴 (없을 경우를 대비한 기본값 설정)
-const tableName = process.env.DB_TABLE_EBOOK || 'ebook_table';
+const APP_VERSION = "v1.0.6"; // 앱 버전 정보
 
 let db = null;
 let SQL = null;
+let tableName = null; // 기본 테이블 이름 없을시 에러 메시지 출력 & 돛작 중단
+
+// 웹 환경 설정을 동적으로 로드하는 함수
+async function loadConfig() {
+    try {
+        const response = await fetch('config_web.json');
+        if (response.ok) {
+            const config = await response.json();
+            if (config.DB_TABLE_EBOOK) {
+                tableName = config.DB_TABLE_EBOOK;
+                console.log(`설정 적용 완료: 테이블명 = ${tableName}`);
+                return;
+            }
+            throw new Error("File not found DB_TABLE_EBOOK !!!");
+        }
+    } catch (error) {
+        console.warn("config_web.json 로드 실패. 기본 테이블이 필요합니다.", error);
+        alert("설정 파일 로드 실패. 앱 구동 종료.");
+    }
+}
 
 function displayVersion() {
     const versionEl = document.getElementById('appVersion');
@@ -16,6 +32,7 @@ function displayVersion() {
 
 async function initSqlEngine() {
     displayVersion(); 
+    await loadConfig(); // SQL 엔진 초기화 전에 설정을 먼저 로드합니다.
     try {
         const config = {
             locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
