@@ -71,6 +71,13 @@ document.getElementById('dbFileInput').addEventListener('change', function(e) {
     const file = e.target.files[0];
     if (!file) return;
 
+    // 🔴 [수정] 아직 환경설정(tableName)이나 SQL 엔진이 로드되지 않았다면 실행 차단
+    if (!tableName || !SQL) {
+        alert("환경 설정(config_web.json)을 로딩 중입니다. 잠시 후 다시 시도해주세요.");
+        e.target.value = ''; // 선택한 파일 초기화
+        return;
+    }
+
     const reader = new FileReader();
     reader.onload = function() {
         try {
@@ -98,13 +105,19 @@ function updateUIConnected() {
 
 function searchBooks(keyword) {
     if (!db) return;
+
+    // 🔴 [수정] tableName이 없을 경우 쿼리를 수행하지 않고 중단
+    if (!tableName) {
+        console.warn("[Search] 테이블명이 아직 로드되지 않아 검색을 취소합니다.");
+        return;
+    }    
     
     const bookListDiv = document.getElementById('bookList');
     bookListDiv.innerHTML = '';
 
-    // 실제 테이블명 및 대소문자 컬럼명 반영
+// 🔴 [수정] 테이블명에 특수문자나 숫자가 포함될 수 있으므로 백틱(`)이나 쌍따옴표(")로 감싸줍니다.
     const query = `
-        SELECT * FROM ${tableName} 
+        SELECT * FROM "${tableName}" 
         WHERE BookContents LIKE ? OR KDCCode LIKE ? OR Attribute LIKE ?
         ORDER BY BookID ASC
     `;
