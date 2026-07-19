@@ -2,23 +2,31 @@ const APP_VERSION = "v1.0.6"; // 앱 버전 정보
 
 let db = null;
 let SQL = null;
-let tableName = null; // 기본 테이블 이름 없을시 에러 메시지 출력 & 돛작 중단
+let tableName = null;
 
-// 웹 환경 설정을 동적으로 로드하는 함수
+// 웹 환경 설정을 동적으로 로드하는 함수 (캐시 방지 적용)
 async function loadConfig() {
     try {
-        const response = await fetch('config_web.json');
+        // 브라우저 캐시로 인해 비어있던 이전 config_web.json을 가져오는 문제를 방지하기 위해 캐시 무효화 쿼리스트링 추가
+        const response = await fetch('config_web.json?v=' + new Date().getTime(), {
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
+        
         if (response.ok) {
             const config = await response.json();
             if (config.DB_TABLE_EBOOK) {
                 tableName = config.DB_TABLE_EBOOK;
-                console.log(`설정 적용 완료: 테이블명 = ${tableName}`);
+                console.log(`[Config] 설정 적용 완료: 테이블명 = ${tableName}`);
                 return;
             }
-            throw new Error("File not found DB_TABLE_EBOOK !!!");
+            throw new Error("Config file not found DB_TABLE_EBOOK !!!");
         }
+        throw new Error(`설정 파일을 가져오지 못했습니다. (HTTP Status: ${response.status})`);
     } catch (error) {
-        console.warn("config_web.json 로드 실패. 기본 테이블이 필요합니다.", error);
+        console.warn("config file 로드 실패. 기본 테이블이 필요합니다.", error);
         alert("설정 파일 로드 실패. 앱 구동 종료.");
     }
 }
@@ -30,14 +38,30 @@ function displayVersion() {
     }
 }
 
+// SQL 엔진 및 환경 설정을 초기화하는 함수
 async function initSqlEngine() {
-    displayVersion(); 
-    await loadConfig(); // SQL 엔진 초기화 전에 설정을 먼저 로드합니다.
+    displayVersion();
+    
+    // 로딩이 완료될 때까지 DB 파일 입력을 임시로 비활성화하여 에러를 원천 차단합니다.
+    const fileInput = document.getElementById('dbFileInput');
+    if (fileInput) {
+        fileInput.disabled = true;
+        fileInput.placeholder = "환경 설정 로딩 중...";
+    }
+    
+    await loadConfig(); // config_web.json 로드 대기
+    
     try {
         const config = {
             locateFile: filename => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${filename}`
         };
         SQL = await initSqlJs(config);
+        
+        // 초기화 완료 시 파일 입력 활성화
+        if (fileInput) {
+            fileInput.disabled = false;
+        }
+        console.log("[SQL] 엔진 및 테이블 설정 완료. 파일 입력이 활성화되었습니다.");
     } catch (error) {
         console.error("SQL 엔진 초기화 실패:", error);
     }
@@ -150,8 +174,9 @@ function searchBooks(keyword) {
         console.error(err);
         bookListDiv.innerHTML = `
             <div class="text-center py-12 text-red-500 text-sm">
-                ⚠️ 쿼리 처리 실패<br>
-                <span class="text-xs text-gray-400">데이터베이스 스키마 대소문자 설정을 확인하세요.</span>
+                ⚠️ 쿼리 처리 실패 (테이블명: ${tableName})<br>
+                <span class="text-xs text-red-400 font-mono d-block mt-1">${err.message}</span><br>
+                <span class="text-xs text-gray-400">데이터베이스 파일과 테이블명을 다시 확인하세요.</span>
             </div>`;
     }
 }
