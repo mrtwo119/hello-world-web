@@ -1,4 +1,4 @@
-const APP_VERSION = "v1.0.6"; // 앱 버전 정보
+const APP_VERSION = "v1.0.7"; // 앱 버전 정보
 
 let db = null;
 let SQL = null;
@@ -7,7 +7,11 @@ let tableName = null;
 // 웹 환경 설정을 동적으로 로드하는 함수 (캐시 방지 적용)
 async function loadConfig() {
     try {
-        // 브라우저 캐시로 인해 비어있던 이전 config_web.json을 가져오는 문제를 방지하기 위해 캐시 무효화 쿼리스트링 추가
+        // 로컬 file:// 프로토콜 차단 여부 검사
+        if (window.location.protocol === 'file:') {
+            throw new Error("로컬 파일(file://) 형식으로 실행 중입니다. Live Server 등 웹 서버 환경에서 실행해야 fetch가 작동합니다.");
+        }
+
         const response = await fetch('config_web.json?v=' + new Date().getTime(), {
             headers: {
                 'Cache-Control': 'no-cache',
@@ -15,19 +19,32 @@ async function loadConfig() {
             }
         });
         
-        if (response.ok) {
-            const config = await response.json();
-            if (config.DB_TABLE_EBOOK) {
-                tableName = config.DB_TABLE_EBOOK;
-                console.log(`[Config] 설정 적용 완료: 테이블명 = ${tableName}`);
-                return;
-            }
-            throw new Error("Config file not found DB_TABLE_EBOOK !!!");
+        if (!response.ok) {
+            throw new Error(`서버에서 config_web.json 파일을 찾을 수 없거나 불러오지 못했습니다. (HTTP 상태코드: ${response.status})`);
         }
-        throw new Error(`설정 파일을 가져오지 못했습니다. (HTTP Status: ${response.status})`);
+
+        // JSON을 바로 파싱하지 않고 텍스트로 먼저 받아서 파싱 에러 추적
+        const rawText = await response.text();
+        
+        let config;
+        try {
+            config = JSON.parse(rawText);
+        } catch (jsonErr) {
+            throw new Error(`config_web.json의 파일 내용이 올바른 JSON 형식이 아닙니다. 눈에 보이지 않는 오타나 BOM 문자가 있을 수 있습니다.\n[실제 파일 내용]: ${rawText.substring(0, 100)}`);
+        }
+
+        if (config && config.DB_TABLE_EBOOK) {
+            tableName = config.DB_TABLE_EBOOK;
+            console.log(`[Config] 설정 적용 완료: 테이블명 = ${tableName}`);
+            return;
+        }
+        
+        throw new Error("JSON 파싱은 성공했으나, 내부에 'DB_TABLE_EBOOK' 키 이름이 존재하지 않습니다.");
+
     } catch (error) {
-        console.warn("config file 로드 실패. 기본 테이블이 필요합니다.", error);
-        alert("설정 파일 로드 실패. 앱 구동 종료.");
+        // 🚨 실질적인 실패 원인을 콘솔과 얼럿창에 상세히 뿌려줍니다.
+        console.error("🛑 실질적 원인 리포트:", error);
+        alert(`[설정 파일 로드 실패]\n\n실질적 원인:\n${error.message}\n\n앱 구동을 종료합니다.`);
     }
 }
 
